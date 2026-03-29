@@ -1,0 +1,20 @@
+services:
+  efficientml:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "0.0.0.0:8074:8080"
+    ipc: host
+    shm_size: 64G
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
