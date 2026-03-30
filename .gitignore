@@ -1,0 +1,126 @@
+# =====================
+# Python
+# =====================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+pip-wheel-metadata/
+*.egg
+
+# Virtualenv
+.venv/
+venv/
+ENV/
+env/
+.python-version
+
+# =====================
+# Jupyter / IPython
+# =====================
+.ipynb_checkpoints/
+.profile_default/
+.ipython/
+
+# *-checkpoint.ipynb
+
+# =====================
+# IDE / Editors
+# =====================
+.vscode/
+.idea/
+*.iml
+
+# =====================
+# OS files
+# =====================
+.DS_Store
+Thumbs.db
+
+# =====================
+# Logs / outputs
+# =====================
+*.log
+logs/
+log/
+runs/
+wandb/
+mlruns/          # MLflow
+lightning_logs/  # PyTorch Lightning
+tensorboard/
+tb_logs/
+
+# =====================
+# Data / artifacts (ML)
+# =====================
+data/
+datasets/
+dataset/
+raw/
+processed/
+interim/
+external/
+cache/
+.tmp/
+tmp/
+
+# Model checkpoints / weights
+checkpoints/
+ckpt/
+*.ckpt
+*.pt
+*.pth
+*.pkl
+*.joblib
+*.h5
+*.hdf5
+*.onnx
+*.tflite
+
+# =====================
+# Archives (включая tar.gz)
+# =====================
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.tgz
+*.tar.gz
+*.bz2
+*.xz
+
+# =====================
+# Environment / secrets
+# =====================
+.env
+.env.*
+*.pem
+*.key
+secrets/
+credentials/
+*.sqlite3
+
+# =====================
+# Coverage / tests
+# =====================
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# =====================
+# UV / Poetry / Pip
+# =====================
+.uv/
+uv.lock
+poetry.lock
+Pipfile.lock
