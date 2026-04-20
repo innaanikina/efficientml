@@ -10,6 +10,7 @@ dependencies = [
     "triton-viz==3.0",
     "ipykernel>=7.2.0",
     "pip>=26.0.1",
+    "transformers>=4.45",
 ]
 
 [[tool.uv.index]]
