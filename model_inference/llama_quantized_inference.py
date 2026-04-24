@@ -49,7 +49,7 @@ def synchronize() -> None:
 
 
 def load_model_and_tokenizer():
-    tokenizer = AutoTokenizer.from_pretrained(config.MODEL_ID)
+    tokenizer = AutoTokenizer.from_pretrained(config.MODEL_ID, use_fast=False)
     model = AutoModelForCausalLM.from_pretrained(
         config.MODEL_ID,
         torch_dtype=torch.float16,
@@ -75,8 +75,6 @@ def quantize_model(model: nn.Module) -> dict:
     synchronize()
     elapsed_s = time.perf_counter() - start
 
-    gc.collect()
-    torch.cuda.empty_cache()
     linear_weight_bytes_after = linear_weight_bytes(model) + quantized_linear_weight_bytes(model)
 
     return {
@@ -91,17 +89,34 @@ def quantize_model(model: nn.Module) -> dict:
     }
 
 
+def compute_error(actual: torch.Tensor, expected: torch.Tensor) -> dict:
+    diff = actual.float() - expected.float()
+    return {
+        "mse": (diff**2).mean().item(),
+        "mae": diff.abs().mean().item(),
+        "max_abs_error": diff.abs().max().item(),
+    }
+
+
 @torch.no_grad()
-def run_forward_check(model, tokenizer) -> dict:
+def run_forward_check(model, tokenizer, baseline_logits=None) -> dict:
     inputs = tokenizer(config.PROMPT, return_tensors="pt").to("cuda")
     outputs = model(**inputs)
     logits = outputs.logits
 
-    return {
+    result = {
         "input_shape": list(inputs["input_ids"].shape),
         "logits_shape": list(logits.shape),
         "logits_dtype": str(logits.dtype),
     }
+
+    if baseline_logits is not None:
+        result["logits_error"] = compute_error(
+            logits.detach().cpu(),
+            baseline_logits,
+        )
+
+    return result
 
 
 @torch.no_grad()
@@ -132,8 +147,13 @@ def run_generation(model, tokenizer) -> dict:
 
 def main() -> None:
     model, tokenizer = load_model_and_tokenizer()
+
+    inputs = tokenizer(config.PROMPT, return_tensors="pt").to("cuda")
+    with torch.no_grad():
+        baseline_logits = model(**inputs).logits.detach().cpu()
+
     quantization = quantize_model(model)
-    forward = run_forward_check(model, tokenizer)
+    forward = run_forward_check(model, tokenizer, baseline_logits=baseline_logits)
     generation = run_generation(model, tokenizer)
 
     report = {
@@ -151,11 +171,11 @@ def main() -> None:
 
     config.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     config.OUTPUT_JSON.write_text(
-        json.dumps(report, indent=2),
+        json.dumps(report, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
 
-    print(json.dumps(report, indent=2))
+    print(json.dumps(report, indent=2, ensure_ascii=False))
     print(f"\nОтчет сохранен: {config.OUTPUT_JSON}")
 
 

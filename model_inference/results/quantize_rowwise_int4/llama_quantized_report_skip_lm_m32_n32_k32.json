@@ -1,0 +1,44 @@
+{
+  "model_id": "unsloth/Llama-3.2-1B-Instruct",
+  "skip_module_names": [
+    "lm_head"
+  ],
+  "use_autotuned": false,
+  "block_m": 32,
+  "block_n": 32,
+  "block_k": 32,
+  "prompt": "Вкратце, квантизация в int4 - это",
+  "quantization": {
+    "linear_before": 113,
+    "linear_after": 1,
+    "quantized_linear_after": 112,
+    "quantization_time_s": 0.6422008266672492,
+    "linear_weight_mib_before": 2357.0,
+    "linear_weight_mib_after": 965.71875,
+    "quantized_weight_mib_after": 464.71875,
+    "linear_weight_compression": 2.4406691906934603
+  },
+  "forward": {
+    "input_shape": [
+      1,
+      15
+    ],
+    "logits_shape": [
+      1,
+      15,
+      128256
+    ],
+    "logits_dtype": "torch.float16",
+    "logits_error": {
+      "mse": 3.4527034759521484,
+      "mae": 1.4205073118209839,
+      "max_abs_error": 13.2109375
+    }
+  },
+  "generation": {
+    "generated_tokens": 32,
+    "generation_time_s": 0.8197791799902916,
+    "tokens_per_second": 39.03490205786754,
+    "text": "Вкратце, квантизация в int4 - это простая операция, которая позволяет кратомумножатимому к кратному. Вкрато 4.2.3.3"
+  }
+}
