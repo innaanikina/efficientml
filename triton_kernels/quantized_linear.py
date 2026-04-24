@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 
-from triton_kernels.matmul_int4 import matmul_x16_w4, matmul_x16_w4_autotuned
-from triton_kernels.quantize_kernel import quantize_rowwise_int4
+from triton_kernels.quantization_kernels import get_quantized_kernel
 
 
 class QuantizedLinear(nn.Module):
@@ -17,6 +16,7 @@ class QuantizedLinear(nn.Module):
         block_m: int = 32,
         block_n: int = 32,
         block_k: int = 32,
+        kernel_name: str = "rowwise_int4",
     ):
         super().__init__()
         self.in_features = in_features
@@ -25,6 +25,7 @@ class QuantizedLinear(nn.Module):
         self.block_m = block_m
         self.block_n = block_n
         self.block_k = block_k
+        self.kernel_name = kernel_name
 
         self.register_buffer("w_packed", w_packed)
         self.register_buffer("w_scales", w_scales)
@@ -42,9 +43,11 @@ class QuantizedLinear(nn.Module):
         block_m: int = 32,
         block_n: int = 32,
         block_k: int = 32,
+        kernel_name: str = "rowwise_int4",
     ) -> "QuantizedLinear":
         weight = linear.weight.detach().to(dtype=torch.float16)
-        w_packed, w_scales = quantize_rowwise_int4(weight)
+        kernel = get_quantized_kernel(kernel_name)
+        w_packed, w_scales = kernel.quantize(weight)
         bias = None if linear.bias is None else linear.bias.detach().to(dtype=torch.float16)
 
         return cls(
@@ -57,20 +60,22 @@ class QuantizedLinear(nn.Module):
             block_m=block_m,
             block_n=block_n,
             block_k=block_k,
+            kernel_name=kernel_name,
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         original_shape = x.shape[:-1]
         x_2d = x.reshape(-1, self.in_features)
-        if self.use_autotuned:
-            y = matmul_x16_w4_autotuned(
+        kernel = get_quantized_kernel(self.kernel_name)
+        if self.use_autotuned and kernel.matmul_autotuned is not None:
+            y = kernel.matmul_autotuned(
                 x_2d,
                 self.w_packed,
                 self.w_scales,
                 self.in_features,
             )
         else:
-            y = matmul_x16_w4(
+            y = kernel.matmul(
                 x_2d,
                 self.w_packed,
                 self.w_scales,
@@ -93,6 +98,7 @@ def replace_linear_layers(
     block_m: int = 32,
     block_n: int = 32,
     block_k: int = 32,
+    kernel_name: str = "rowwise_int4",
     _prefix: str = "",
 ) -> nn.Module:
     skip_module_names = skip_module_names or set()
@@ -112,6 +118,7 @@ def replace_linear_layers(
                     block_m=block_m,
                     block_n=block_n,
                     block_k=block_k,
+                    kernel_name=kernel_name,
                 ),
             )
         else:
@@ -122,6 +129,7 @@ def replace_linear_layers(
                 block_m=block_m,
                 block_n=block_n,
                 block_k=block_k,
+                kernel_name=kernel_name,
                 _prefix=full_name,
             )
 

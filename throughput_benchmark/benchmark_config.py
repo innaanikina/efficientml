@@ -15,8 +15,9 @@ BATCH_SIZES = [128, 512, 2048]
 
 SKIP_LM_HEAD = False
 SKIP_AUTOTUNED = False
+KERNEL_NAME = "rowwise_int4"
 
-OUTPUT = Path("throughput_benchmark/results/matmul_benchmark.csv")
+OUTPUT = Path(f"throughput_benchmark/results/{KERNEL_NAME}/matmul_benchmark.csv")
 
 REPEAT = 100
 WARMUP = 50

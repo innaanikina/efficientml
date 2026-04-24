@@ -10,6 +10,7 @@ def write_csv(path: Path, results: list[BenchmarkResult]) -> None:
         writer = csv.DictWriter(
             f,
             fieldnames=[
+                "kernel_name",
                 "layer",
                 "batch",
                 "in_features",
@@ -31,6 +32,7 @@ def write_csv(path: Path, results: list[BenchmarkResult]) -> None:
             writer.writerow(
                 {
                     "layer": row.layer,
+                    "kernel_name": row.kernel_name,
                     "batch": row.batch,
                     "in_features": row.in_features,
                     "out_features": row.out_features,
@@ -75,6 +77,7 @@ def write_markdown(path: Path, results: list[BenchmarkResult]) -> None:
     md_path.parent.mkdir(parents=True, exist_ok=True)
     headers = [
         "layer",
+        "kernel",
         "batch",
         "IN",
         "OUT",
@@ -98,6 +101,7 @@ def write_markdown(path: Path, results: list[BenchmarkResult]) -> None:
             + " | ".join(
                 [
                     row.layer,
+                    row.kernel_name,
                     str(row.batch),
                     str(row.in_features),
                     str(row.out_features),
@@ -123,6 +127,6 @@ def print_summary(results: list[BenchmarkResult]) -> None:
         print(
             f"{row.layer:9s} B={row.batch:<4d} "
             f"IN={row.in_features:<5d} OUT={row.out_features:<6d} "
-            f"{row.method:19s} {row.latency_ms:8.3f} ms "
+            f"{row.kernel_name}:{row.method:19s} {row.latency_ms:8.3f} ms "
             f"{row.tflops:8.3f} TFLOP/s {kernel_config}"
         )

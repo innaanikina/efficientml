@@ -22,6 +22,7 @@ class KernelConfig:
 
 @dataclass(frozen=True)
 class BenchmarkResult:
+    kernel_name: str
     layer: str
     batch: int
     in_features: int

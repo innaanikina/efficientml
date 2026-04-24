@@ -10,13 +10,9 @@ from throughput_benchmark.benchmark_types import (
     BenchmarkResult,
     KernelConfig,
 )
-from triton_kernels.matmul_int4 import (
-    _matmul_x16_w4_kernel_autotuned,
-    matmul_x16_w4,
-    matmul_x16_w4_autotuned,
-    matmul_x16_w4_ref,
-)
-from triton_kernels.quantize_kernel import quantize_rowwise_int4
+from triton_kernels.quantization_kernels import QuantizedKernel, get_quantized_kernel
+from utils.cuda import synchronize
+from utils.memory import tensor_memory_mib
 
 
 def make_cases(skip_lm_head: bool) -> list[BenchmarkCase]:
@@ -29,11 +25,6 @@ def make_cases(skip_lm_head: bool) -> list[BenchmarkCase]:
         for layer, in_features, out_features, copies in layers
         for batch in batches
     ]
-
-
-def synchronize() -> None:
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
 
 
 def measure_latency_ms(fn: Callable[[], torch.Tensor], warmup: int, repeat: int) -> float:
@@ -57,26 +48,24 @@ def matmul_tflops(batch: int, in_features: int, out_features: int, latency_ms: f
     return ops / latency_s / 1e12
 
 
-def tensor_memory_mb(*tensors: torch.Tensor) -> float:
-    bytes_total = sum(t.element_size() * t.numel() for t in tensors)
-    return bytes_total / 1024**2
-
-
 def fixed_kernel_config(block_m: int, block_n: int, block_k: int) -> KernelConfig:
     return KernelConfig(block_m=block_m, block_n=block_n, block_k=block_k)
 
 
-def autotuned_kernel_config() -> KernelConfig:
-    best_config = _matmul_x16_w4_kernel_autotuned.best_config
+def autotuned_kernel_config(kernel: QuantizedKernel) -> KernelConfig:
+    if kernel.get_autotuned_config is None:
+        return KernelConfig()
+
+    best_config = kernel.get_autotuned_config()
     if best_config is None:
         return KernelConfig()
 
     return KernelConfig(
-        block_m=best_config.kwargs.get("BLOCK_M"),
-        block_n=best_config.kwargs.get("BLOCK_N"),
-        block_k=best_config.kwargs.get("BLOCK_K"),
-        num_warps=best_config.num_warps,
-        num_stages=best_config.num_stages,
+        block_m=best_config.get("block_m"),
+        block_n=best_config.get("block_n"),
+        block_k=best_config.get("block_k"),
+        num_warps=best_config.get("num_warps"),
+        num_stages=best_config.get("num_stages"),
     )
 
 
@@ -85,14 +74,15 @@ def make_methods(
     w: torch.Tensor,
     w_packed: torch.Tensor,
     w_scales: torch.Tensor,
+    kernel: QuantizedKernel,
     in_features: int,
     block_m: int,
     block_n: int,
     block_k: int,
     skip_autotuned: bool,
 ) -> list[BenchmarkMethod]:
-    fp16_weight_memory = tensor_memory_mb(w)
-    w4_weight_memory = tensor_memory_mb(w_packed, w_scales)
+    fp16_weight_memory = tensor_memory_mib(w)
+    w4_weight_memory = tensor_memory_mib(w_packed, w_scales)
 
     methods = [
         BenchmarkMethod(
@@ -101,13 +91,8 @@ def make_methods(
             weight_memory_mb=fp16_weight_memory,
         ),
         BenchmarkMethod(
-            name="torch_w4_ref",
-            run=lambda: matmul_x16_w4_ref(x, w_packed, w_scales, in_features),
-            weight_memory_mb=w4_weight_memory,
-        ),
-        BenchmarkMethod(
-            name="triton_w4",
-            run=lambda: matmul_x16_w4(
+            name="triton_fixed",
+            run=lambda: kernel.matmul(
                 x,
                 w_packed,
                 w_scales,
@@ -121,18 +106,28 @@ def make_methods(
         ),
     ]
 
-    if not skip_autotuned:
+    if kernel.reference_matmul is not None:
+        methods.insert(
+            1,
+            BenchmarkMethod(
+                name="torch_quantized_ref",
+                run=lambda: kernel.reference_matmul(x, w_packed, w_scales, in_features),
+                weight_memory_mb=w4_weight_memory,
+            ),
+        )
+
+    if not skip_autotuned and kernel.matmul_autotuned is not None:
         methods.append(
             BenchmarkMethod(
-                name="triton_w4_autotuned",
-                run=lambda: matmul_x16_w4_autotuned(
+                name="triton_autotuned",
+                run=lambda: kernel.matmul_autotuned(
                     x,
                     w_packed,
                     w_scales,
                     in_features,
                 ),
                 weight_memory_mb=w4_weight_memory,
-                get_kernel_config=autotuned_kernel_config,
+                get_kernel_config=lambda: autotuned_kernel_config(kernel),
             )
         )
 
@@ -147,15 +142,18 @@ def benchmark_case(
     block_n: int,
     block_k: int,
     skip_autotuned: bool,
+    kernel_name: str,
 ) -> list[BenchmarkResult]:
+    kernel = get_quantized_kernel(kernel_name)
     x = torch.randn(case.batch, case.in_features, device="cuda", dtype=torch.float16)
     w = torch.randn(case.out_features, case.in_features, device="cuda", dtype=torch.float16)
-    w_packed, w_scales = quantize_rowwise_int4(w)
+    w_packed, w_scales = kernel.quantize(w)
     methods = make_methods(
         x=x,
         w=w,
         w_packed=w_packed,
         w_scales=w_scales,
+        kernel=kernel,
         in_features=case.in_features,
         block_m=block_m,
         block_n=block_n,
@@ -169,6 +167,7 @@ def benchmark_case(
         kernel_config = method.get_kernel_config()
         results.append(
             BenchmarkResult(
+                kernel_name=kernel.name,
                 layer=case.layer,
                 batch=case.batch,
                 in_features=case.in_features,
@@ -207,6 +206,7 @@ def main() -> None:
             block_n=config.BLOCK_N,
             block_k=config.BLOCK_K,
             skip_autotuned=config.SKIP_AUTOTUNED,
+            kernel_name=config.KERNEL_NAME,
         )
         all_results.extend(case_results)
         print_summary(case_results)

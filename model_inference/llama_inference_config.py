@@ -6,6 +6,7 @@ MODEL_ID = "unsloth/Llama-3.2-1B-Instruct"
 SKIP_MODULE_NAMES = set()
 
 USE_AUTOTUNED = False
+KERNEL_NAME = "rowwise_int4"
 BLOCK_M = 256
 BLOCK_N = 64
 BLOCK_K = 32

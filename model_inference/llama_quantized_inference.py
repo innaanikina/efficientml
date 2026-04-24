@@ -1,101 +1,11 @@
-import gc
 import json
 import time
 
 import torch
-import torch.nn as nn
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from model_inference import llama_inference_config as config
-from triton_kernels.quantized_linear import QuantizedLinear, replace_linear_layers
-
-
-def count_modules(model: nn.Module, module_type: type[nn.Module]) -> int:
-    return sum(1 for module in model.modules() if isinstance(module, module_type))
-
-
-def tensor_nbytes(tensor: torch.Tensor) -> int:
-    return tensor.element_size() * tensor.numel()
-
-
-def bytes_to_mib(nbytes: int) -> float:
-    return nbytes / 1024**2
-
-
-def linear_weight_bytes(model: nn.Module) -> int:
-    total = 0
-    for module in model.modules():
-        if isinstance(module, nn.Linear):
-            total += tensor_nbytes(module.weight)
-            if module.bias is not None:
-                total += tensor_nbytes(module.bias)
-    return total
-
-
-def quantized_linear_weight_bytes(model: nn.Module) -> int:
-    total = 0
-    for module in model.modules():
-        if isinstance(module, QuantizedLinear):
-            total += tensor_nbytes(module.w_packed)
-            total += tensor_nbytes(module.w_scales)
-            if module.bias is not None:
-                total += tensor_nbytes(module.bias)
-    return total
-
-
-def synchronize() -> None:
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
-
-
-def load_model_and_tokenizer():
-    tokenizer = AutoTokenizer.from_pretrained(config.MODEL_ID, use_fast=False)
-    model = AutoModelForCausalLM.from_pretrained(
-        config.MODEL_ID,
-        torch_dtype=torch.float16,
-        device_map="cuda",
-    )
-    model.eval()
-    return model, tokenizer
-
-
-def quantize_model(model: nn.Module) -> dict:
-    linear_before = count_modules(model, nn.Linear)
-    linear_weight_bytes_before = linear_weight_bytes(model)
-
-    start = time.perf_counter()
-    replace_linear_layers(
-        model,
-        skip_module_names=config.SKIP_MODULE_NAMES,
-        use_autotuned=config.USE_AUTOTUNED,
-        block_m=config.BLOCK_M,
-        block_n=config.BLOCK_N,
-        block_k=config.BLOCK_K,
-    )
-    synchronize()
-    elapsed_s = time.perf_counter() - start
-
-    linear_weight_bytes_after = linear_weight_bytes(model) + quantized_linear_weight_bytes(model)
-
-    return {
-        "linear_before": linear_before,
-        "linear_after": count_modules(model, nn.Linear),
-        "quantized_linear_after": count_modules(model, QuantizedLinear),
-        "quantization_time_s": elapsed_s,
-        "linear_weight_mib_before": bytes_to_mib(linear_weight_bytes_before),
-        "linear_weight_mib_after": bytes_to_mib(linear_weight_bytes_after),
-        "quantized_weight_mib_after": bytes_to_mib(quantized_linear_weight_bytes(model)),
-        "linear_weight_compression": linear_weight_bytes_before / linear_weight_bytes_after,
-    }
-
-
-def compute_error(actual: torch.Tensor, expected: torch.Tensor) -> dict:
-    diff = actual.float() - expected.float()
-    return {
-        "mse": (diff**2).mean().item(),
-        "mae": diff.abs().mean().item(),
-        "max_abs_error": diff.abs().max().item(),
-    }
+from utils.cuda import synchronize
+from utils.model import compute_error, load_model_and_tokenizer, quantize_model
 
 
 @torch.no_grad()
@@ -146,13 +56,21 @@ def run_generation(model, tokenizer) -> dict:
 
 
 def main() -> None:
-    model, tokenizer = load_model_and_tokenizer()
+    model, tokenizer = load_model_and_tokenizer(config.MODEL_ID, use_fast_tokenizer=False)
 
     inputs = tokenizer(config.PROMPT, return_tensors="pt").to("cuda")
     with torch.no_grad():
         baseline_logits = model(**inputs).logits.detach().cpu()
 
-    quantization = quantize_model(model)
+    quantization = quantize_model(
+        model,
+        skip_module_names=config.SKIP_MODULE_NAMES,
+        use_autotuned=config.USE_AUTOTUNED,
+        kernel_name=config.KERNEL_NAME,
+        block_m=config.BLOCK_M,
+        block_n=config.BLOCK_N,
+        block_k=config.BLOCK_K,
+    )
     forward = run_forward_check(model, tokenizer, baseline_logits=baseline_logits)
     generation = run_generation(model, tokenizer)
 
@@ -160,6 +78,7 @@ def main() -> None:
         "model_id": config.MODEL_ID,
         "skip_module_names": sorted(config.SKIP_MODULE_NAMES),
         "use_autotuned": config.USE_AUTOTUNED,
+        "kernel_name": config.KERNEL_NAME,
         "block_m": config.BLOCK_M,
         "block_n": config.BLOCK_N,
         "block_k": config.BLOCK_K,

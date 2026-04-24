@@ -11,6 +11,7 @@ def test_quantized_linear_matches_reference_without_bias():
     x = torch.randn(8, 64, device="cuda", dtype=torch.float16)
 
     quantized = QuantizedLinear.from_linear(linear, use_autotuned=False)
+    assert quantized.kernel_name == "rowwise_int4"
     y = quantized(x)
     y_ref = matmul_x16_w4_ref(
         x,
