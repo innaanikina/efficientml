@@ -1,0 +1,68 @@
+{
+  "model_id": "unsloth/Llama-3.2-1B-Instruct",
+  "dataset": {
+    "name": "wikitext",
+    "config": "wikitext-2-raw-v1",
+    "split": "test"
+  },
+  "eval_tokens": 8192,
+  "quantized_config": {
+    "skip_module_names": [
+      "lm_head"
+    ],
+    "use_autotuned": false,
+    "kernel_name": "rowwise_int4",
+    "block_m": 256,
+    "block_n": 64,
+    "block_k": 32
+  },
+  "baseline": {
+    "quantization": null,
+    "perplexity": {
+      "tokens": 8192,
+      "sequence_length": 512,
+      "eval_time_s": 0.9069067956879735,
+      "eval_tokens_per_second": 9032.901770005597,
+      "mean_nll": 3.0204206705093384,
+      "perplexity": 20.499913579664163
+    },
+    "generation": {
+      "prompt_tokens": 15,
+      "generated_tokens": 32,
+      "generation_time_s": 0.578210698440671,
+      "generation_tokens_per_second": 55.34314755209161
+    }
+  },
+  "quantized": {
+    "quantization": {
+      "linear_before": 113,
+      "linear_after": 1,
+      "quantized_linear_after": 112,
+      "kernel_name": "rowwise_int4",
+      "quantization_time_s": 0.6422546794638038,
+      "linear_weight_mib_before": 2357.0,
+      "linear_weight_mib_after": 965.71875,
+      "linear_weight_compression": 2.4406691906934603
+    },
+    "perplexity": {
+      "tokens": 8192,
+      "sequence_length": 512,
+      "eval_time_s": 0.9900473225861788,
+      "eval_tokens_per_second": 8274.351955824744,
+      "mean_nll": 3.9621457010507584,
+      "perplexity": 52.570004532554144
+    },
+    "generation": {
+      "prompt_tokens": 15,
+      "generated_tokens": 32,
+      "generation_time_s": 1.0408554188907146,
+      "generation_tokens_per_second": 30.743943317414637
+    }
+  },
+  "comparison": {
+    "perplexity_delta": 32.070090952889984,
+    "perplexity_ratio": 2.5644012755596877,
+    "eval_speed_ratio": 0.9160236839174237,
+    "generation_speed_ratio": 0.5555149043244599
+  }
+}
