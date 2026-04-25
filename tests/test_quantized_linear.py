@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from triton_kernels.matmul_int4 import matmul_x16_w4_ref
+from triton_kernels.quantization_kernels import get_quantized_kernel
 from triton_kernels.quantized_linear import QuantizedLinear, replace_linear_layers
 
 
@@ -13,10 +13,10 @@ def test_quantized_linear_matches_reference_without_bias():
     quantized = QuantizedLinear.from_linear(linear, use_autotuned=False)
     assert quantized.kernel_name == "rowwise_int4"
     y = quantized(x)
-    y_ref = matmul_x16_w4_ref(
+    kernel = get_quantized_kernel(quantized.kernel_name)
+    y_ref = kernel.reference_matmul(
         x,
-        quantized.w_packed,
-        quantized.w_scales,
+        quantized.quantized_weights,
         quantized.in_features,
     )
 
@@ -30,10 +30,10 @@ def test_quantized_linear_matches_reference_with_bias():
 
     quantized = QuantizedLinear.from_linear(linear, use_autotuned=False)
     y = quantized(x)
-    y_ref = matmul_x16_w4_ref(
+    kernel = get_quantized_kernel(quantized.kernel_name)
+    y_ref = kernel.reference_matmul(
         x,
-        quantized.w_packed,
-        quantized.w_scales,
+        quantized.quantized_weights,
         quantized.in_features,
     ) + linear.bias
 

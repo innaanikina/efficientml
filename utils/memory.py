@@ -30,8 +30,8 @@ def quantized_linear_weight_bytes(model: nn.Module) -> int:
     total = 0
     for module in model.modules():
         if isinstance(module, QuantizedLinear):
-            total += tensor_nbytes(module.w_packed)
-            total += tensor_nbytes(module.w_scales)
+            for tensor in module.quantized_weights.tensors.values():
+                total += tensor_nbytes(tensor)
             if module.bias is not None:
                 total += tensor_nbytes(module.bias)
     return total

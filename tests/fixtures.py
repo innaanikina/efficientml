@@ -1,6 +1,7 @@
 import torch
 
 from triton_kernels.quantize_kernel import quantize_rowwise_int4
+from triton_kernels.quantize_kernel_asym import quantize_rowwise_int4_asym
 
 
 SHAPES = [
@@ -21,6 +22,14 @@ def make_case(B: int, IN: int, OUT: int, seed: int = 0, device: str = "cuda"):
     w = torch.randn(OUT, IN, device=device, dtype=torch.float16)
     w_packed, w_scales = quantize_rowwise_int4(w)
     return x, w, w_packed, w_scales
+
+
+def make_case_asym(B: int, IN: int, OUT: int, seed: int = 0, device: str = "cuda"):
+    torch.manual_seed(seed)
+    x = torch.randn(B, IN, device=device, dtype=torch.float16)
+    w = torch.randn(OUT, IN, device=device, dtype=torch.float16)
+    w_packed, w_scales, w_zp = quantize_rowwise_int4_asym(w)
+    return x, w, w_packed, w_scales, w_zp
 
 
 def iter_cases(device: str = "cuda"):

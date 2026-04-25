@@ -14,5 +14,5 @@ BLOCK_K = 32
 PROMPT = "Вкратце, квантизация в int4 - это"
 MAX_NEW_TOKENS = 32
 
-OUTPUT_DIR = Path("model_inference/results")
+OUTPUT_DIR = Path("model_inference/results") / KERNEL_NAME
 OUTPUT_JSON = OUTPUT_DIR / "llama_quantized_report_m256_n64_k32.json"

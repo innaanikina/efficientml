@@ -10,7 +10,7 @@ from throughput_benchmark.benchmark_types import (
     BenchmarkResult,
     KernelConfig,
 )
-from triton_kernels.quantization_kernels import QuantizedKernel, get_quantized_kernel
+from triton_kernels.quantization_kernels import QuantizedKernel, QuantizedWeights, get_quantized_kernel
 from utils.cuda import synchronize
 from utils.memory import tensor_memory_mib
 
@@ -72,8 +72,7 @@ def autotuned_kernel_config(kernel: QuantizedKernel) -> KernelConfig:
 def make_methods(
     x: torch.Tensor,
     w: torch.Tensor,
-    w_packed: torch.Tensor,
-    w_scales: torch.Tensor,
+    quantized_weights: QuantizedWeights,
     kernel: QuantizedKernel,
     in_features: int,
     block_m: int,
@@ -82,7 +81,7 @@ def make_methods(
     skip_autotuned: bool,
 ) -> list[BenchmarkMethod]:
     fp16_weight_memory = tensor_memory_mib(w)
-    w4_weight_memory = tensor_memory_mib(w_packed, w_scales)
+    quantized_weight_memory = tensor_memory_mib(*quantized_weights.tensors.values())
 
     methods = [
         BenchmarkMethod(
@@ -94,14 +93,13 @@ def make_methods(
             name="triton_fixed",
             run=lambda: kernel.matmul(
                 x,
-                w_packed,
-                w_scales,
+                quantized_weights,
                 in_features,
                 block_m,
                 block_n,
                 block_k,
             ),
-            weight_memory_mb=w4_weight_memory,
+            weight_memory_mb=quantized_weight_memory,
             get_kernel_config=lambda: fixed_kernel_config(block_m, block_n, block_k),
         ),
     ]
@@ -111,8 +109,8 @@ def make_methods(
             1,
             BenchmarkMethod(
                 name="torch_quantized_ref",
-                run=lambda: kernel.reference_matmul(x, w_packed, w_scales, in_features),
-                weight_memory_mb=w4_weight_memory,
+                run=lambda: kernel.reference_matmul(x, quantized_weights, in_features),
+                weight_memory_mb=quantized_weight_memory,
             ),
         )
 
@@ -122,11 +120,10 @@ def make_methods(
                 name="triton_autotuned",
                 run=lambda: kernel.matmul_autotuned(
                     x,
-                    w_packed,
-                    w_scales,
+                    quantized_weights,
                     in_features,
                 ),
-                weight_memory_mb=w4_weight_memory,
+                weight_memory_mb=quantized_weight_memory,
                 get_kernel_config=lambda: autotuned_kernel_config(kernel),
             )
         )
@@ -147,12 +144,11 @@ def benchmark_case(
     kernel = get_quantized_kernel(kernel_name)
     x = torch.randn(case.batch, case.in_features, device="cuda", dtype=torch.float16)
     w = torch.randn(case.out_features, case.in_features, device="cuda", dtype=torch.float16)
-    w_packed, w_scales = kernel.quantize(w)
+    quantized_weights = kernel.quantize(w)
     methods = make_methods(
         x=x,
         w=w,
-        w_packed=w_packed,
-        w_scales=w_scales,
+        quantized_weights=quantized_weights,
         kernel=kernel,
         in_features=case.in_features,
         block_m=block_m,

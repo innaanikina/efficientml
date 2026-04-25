@@ -1,14 +1,13 @@
 import torch
 import torch.nn as nn
 
-from triton_kernels.quantization_kernels import get_quantized_kernel
+from triton_kernels.quantization_kernels import QuantizedWeights, get_quantized_kernel
 
 
 class QuantizedLinear(nn.Module):
     def __init__(
         self,
-        w_packed: torch.Tensor,
-        w_scales: torch.Tensor,
+        quantized_weights: QuantizedWeights,
         in_features: int,
         out_features: int,
         bias: torch.Tensor | None = None,
@@ -26,13 +25,25 @@ class QuantizedLinear(nn.Module):
         self.block_n = block_n
         self.block_k = block_k
         self.kernel_name = kernel_name
+        self.quantized_metadata = dict(quantized_weights.metadata)
+        self.quantized_tensor_names = tuple(quantized_weights.tensors.keys())
 
-        self.register_buffer("w_packed", w_packed)
-        self.register_buffer("w_scales", w_scales)
+        for name, tensor in quantized_weights.tensors.items():
+            self.register_buffer(f"quantized_{name}", tensor)
         if bias is None:
             self.register_buffer("bias", None)
         else:
             self.register_buffer("bias", bias.detach().clone())
+
+    @property
+    def quantized_weights(self) -> QuantizedWeights:
+        return QuantizedWeights(
+            tensors={
+                name: getattr(self, f"quantized_{name}")
+                for name in self.quantized_tensor_names
+            },
+            metadata=dict(self.quantized_metadata),
+        )
 
     @classmethod
     @torch.no_grad()
@@ -47,12 +58,11 @@ class QuantizedLinear(nn.Module):
     ) -> "QuantizedLinear":
         weight = linear.weight.detach().to(dtype=torch.float16)
         kernel = get_quantized_kernel(kernel_name)
-        w_packed, w_scales = kernel.quantize(weight)
+        quantized_weights = kernel.quantize(weight)
         bias = None if linear.bias is None else linear.bias.detach().to(dtype=torch.float16)
 
         return cls(
-            w_packed=w_packed,
-            w_scales=w_scales,
+            quantized_weights=quantized_weights,
             in_features=linear.in_features,
             out_features=linear.out_features,
             bias=bias,
@@ -67,18 +77,17 @@ class QuantizedLinear(nn.Module):
         original_shape = x.shape[:-1]
         x_2d = x.reshape(-1, self.in_features)
         kernel = get_quantized_kernel(self.kernel_name)
+        quantized_weights = self.quantized_weights
         if self.use_autotuned and kernel.matmul_autotuned is not None:
             y = kernel.matmul_autotuned(
                 x_2d,
-                self.w_packed,
-                self.w_scales,
+                quantized_weights,
                 self.in_features,
             )
         else:
             y = kernel.matmul(
                 x_2d,
-                self.w_packed,
-                self.w_scales,
+                quantized_weights,
                 self.in_features,
                 self.block_m,
                 self.block_n,

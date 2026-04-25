@@ -22,6 +22,6 @@ BLOCK_M = llama_inference_config.BLOCK_M
 BLOCK_N = llama_inference_config.BLOCK_N
 BLOCK_K = llama_inference_config.BLOCK_K
 
-OUTPUT_DIR = Path("evaluation/results")
+OUTPUT_DIR = Path("evaluation/results") / KERNEL_NAME
 OUTPUT_JSON = OUTPUT_DIR / "wikitext2_eval.json"
 OUTPUT_MD = OUTPUT_DIR / "wikitext2_eval.md"
