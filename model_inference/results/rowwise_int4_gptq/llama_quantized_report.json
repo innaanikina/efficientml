@@ -19,7 +19,7 @@
     "linear_before": 113,
     "linear_after": 0,
     "gptq_linear_after": 113,
-    "quantization_time_s": 57.328803565353155,
+    "quantization_time_s": 54.15153781697154,
     "linear_weight_mib_before": 2357.0,
     "linear_weight_mib_after": 610.1640625,
     "linear_weight_compression": 3.8628954814919143
@@ -36,15 +36,15 @@
     ],
     "logits_dtype": "torch.float16",
     "logits_error": {
-      "mse": 1.9956333637237549,
-      "mae": 1.0763721466064453,
-      "max_abs_error": 13.22265625
+      "mse": 2.6894567012786865,
+      "mae": 1.22344970703125,
+      "max_abs_error": 10.23193359375
     }
   },
   "generation": {
     "generated_tokens": 32,
-    "generation_time_s": 6.64910700917244,
-    "tokens_per_second": 4.812676342230019,
-    "text": "Вкратце, квантизация в int4 - это функция, которая позволяет визуализировать квантизированные числа в int4. \n\n### Квантизация в int4\n\n"
+    "generation_time_s": 1.0400669015944004,
+    "tokens_per_second": 30.76725155943784,
+    "text": "Вкратце, квантизация в int4 - это кратежная квантизация, которая включает в себя кратежные кратежные кратежные кратежные крат"
   }
 }

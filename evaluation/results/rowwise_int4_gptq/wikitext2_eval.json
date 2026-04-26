@@ -23,16 +23,16 @@
     "perplexity": {
       "tokens": 8192,
       "sequence_length": 512,
-      "eval_time_s": 0.5654759220778942,
-      "eval_tokens_per_second": 14486.912139243223,
+      "eval_time_s": 0.6593177318572998,
+      "eval_tokens_per_second": 12424.965391000655,
       "mean_nll": 3.0204268097877502,
       "perplexity": 20.500039434727377
     },
     "generation": {
       "prompt_tokens": 15,
       "generated_tokens": 32,
-      "generation_time_s": 0.5016930997371674,
-      "generation_tokens_per_second": 63.78401460327942
+      "generation_time_s": 0.5527293346822262,
+      "generation_tokens_per_second": 57.89452086598111
     }
   },
   "quantized": {
@@ -44,7 +44,7 @@
       "linear_before": 113,
       "linear_after": 0,
       "gptq_linear_after": 113,
-      "quantization_time_s": 58.03971595689654,
+      "quantization_time_s": 54.00542775914073,
       "linear_weight_mib_before": 2357.0,
       "linear_weight_mib_after": 610.1640625,
       "linear_weight_compression": 3.8628954814919143
@@ -52,22 +52,22 @@
     "perplexity": {
       "tokens": 8192,
       "sequence_length": 512,
-      "eval_time_s": 6.783623568713665,
-      "eval_tokens_per_second": 1207.6141780304292,
-      "mean_nll": 3.1414664536714554,
-      "perplexity": 23.137772463525167
+      "eval_time_s": 0.5462552271783352,
+      "eval_tokens_per_second": 14996.652832624646,
+      "mean_nll": 3.13165345788002,
+      "perplexity": 22.911831989252104
     },
     "generation": {
       "prompt_tokens": 15,
       "generated_tokens": 32,
-      "generation_time_s": 11.344836506992579,
-      "generation_tokens_per_second": 2.820666475032608
+      "generation_time_s": 0.6617955453693867,
+      "generation_tokens_per_second": 48.3533022002119
     }
   },
   "comparison": {
-    "perplexity_delta": 2.63773302879779,
-    "perplexity_ratio": 1.128669656329023,
-    "eval_speed_ratio": 0.08335897715284366,
-    "generation_speed_ratio": 0.04422215334949433
+    "perplexity_delta": 2.4117925545247267,
+    "perplexity_ratio": 1.1176481909805067,
+    "eval_speed_ratio": 1.2069774329904093,
+    "generation_speed_ratio": 0.8351965173378672
   }
 }
