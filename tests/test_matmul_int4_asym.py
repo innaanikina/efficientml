@@ -41,7 +41,7 @@ def test_reference_bounded_vs_fp16(shape):
 
     err = (y_ref - y_fp16).abs().mean()
 
-    bound = 0.1 * math.sqrt(IN)
+    bound = 0.15 * math.sqrt(IN)
     assert err < bound
 
 

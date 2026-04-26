@@ -10,6 +10,7 @@ from evaluation.evaluation_report import build_comparison, write_markdown
 from evaluation import wikitext2_config as config
 from utils.cuda import synchronize
 from utils.model import load_model_and_tokenizer, load_tokenizer, quantize_model
+from utils.gptq_pipeline import gptq_quantize_model, load_calibration_data
 
 
 def load_wikitext2_input_ids(tokenizer) -> torch.Tensor:
@@ -80,11 +81,17 @@ def evaluate_generation_speed(model, tokenizer) -> dict:
     }
 
 
-def evaluate_model(model_kind: str, input_ids: torch.Tensor) -> dict:
-    model, tokenizer = load_model_and_tokenizer(config.MODEL_ID)
-    quantization = None
-    if model_kind == "quantized":
-        quantization = quantize_model(
+def _do_quantize(model, tokenizer) -> dict:
+    if config.QUANTIZATION_METHOD == "gptq":
+        calib = load_calibration_data(tokenizer, n_samples=config.CALIB_N_SAMPLES)
+        return gptq_quantize_model(
+            model,
+            calib,
+            group_size=config.GROUP_SIZE,
+            act_order=config.ACT_ORDER,
+        )
+    else:
+        return quantize_model(
             model,
             skip_module_names=config.SKIP_MODULE_NAMES,
             use_autotuned=config.USE_AUTOTUNED,
@@ -93,6 +100,13 @@ def evaluate_model(model_kind: str, input_ids: torch.Tensor) -> dict:
             block_n=config.BLOCK_N,
             block_k=config.BLOCK_K,
         )
+
+
+def evaluate_model(model_kind: str, input_ids: torch.Tensor) -> dict:
+    model, tokenizer = load_model_and_tokenizer(config.MODEL_ID)
+    quantization = None
+    if model_kind == "quantized":
+        quantization = _do_quantize(model, tokenizer)
 
     perplexity = evaluate_perplexity(model, input_ids)
     generation = evaluate_generation_speed(model, tokenizer)
@@ -121,12 +135,18 @@ def main() -> None:
         },
         "eval_tokens": int(input_ids.shape[1]),
         "quantized_config": {
+            "quantization_method": config.QUANTIZATION_METHOD,
+            # simple кернелы
             "skip_module_names": sorted(config.SKIP_MODULE_NAMES),
             "use_autotuned": config.USE_AUTOTUNED,
             "kernel_name": config.KERNEL_NAME,
             "block_m": config.BLOCK_M,
             "block_n": config.BLOCK_N,
             "block_k": config.BLOCK_K,
+            # gptq
+            "group_size": config.GROUP_SIZE,
+            "act_order": config.ACT_ORDER,
+            "calib_n_samples": config.CALIB_N_SAMPLES,
         },
         "baseline": baseline,
         "quantized": quantized,

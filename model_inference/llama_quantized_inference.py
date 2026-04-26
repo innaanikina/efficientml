@@ -55,6 +55,29 @@ def run_generation(model, tokenizer) -> dict:
     }
 
 
+def _do_quantize(model, tokenizer) -> dict:
+    """Dispatch to the correct quantization path based on config."""
+    if config.QUANTIZATION_METHOD == "gptq":
+        from utils.gptq_pipeline import gptq_quantize_model, load_calibration_data
+        calib = load_calibration_data(tokenizer, n_samples=config.CALIB_N_SAMPLES)
+        return gptq_quantize_model(
+            model,
+            calib,
+            group_size=config.GROUP_SIZE,
+            act_order=config.ACT_ORDER,
+        )
+    else:
+        return quantize_model(
+            model,
+            skip_module_names=config.SKIP_MODULE_NAMES,
+            use_autotuned=config.USE_AUTOTUNED,
+            kernel_name=config.KERNEL_NAME,
+            block_m=config.BLOCK_M,
+            block_n=config.BLOCK_N,
+            block_k=config.BLOCK_K,
+        )
+
+
 def main() -> None:
     model, tokenizer = load_model_and_tokenizer(config.MODEL_ID, use_fast_tokenizer=False)
 
@@ -62,26 +85,24 @@ def main() -> None:
     with torch.no_grad():
         baseline_logits = model(**inputs).logits.detach().cpu()
 
-    quantization = quantize_model(
-        model,
-        skip_module_names=config.SKIP_MODULE_NAMES,
-        use_autotuned=config.USE_AUTOTUNED,
-        kernel_name=config.KERNEL_NAME,
-        block_m=config.BLOCK_M,
-        block_n=config.BLOCK_N,
-        block_k=config.BLOCK_K,
-    )
+    quantization = _do_quantize(model, tokenizer)
     forward = run_forward_check(model, tokenizer, baseline_logits=baseline_logits)
     generation = run_generation(model, tokenizer)
 
     report = {
         "model_id": config.MODEL_ID,
+        "quantization_method": config.QUANTIZATION_METHOD,
+        # simple kernel params
+        "kernel_name": config.KERNEL_NAME,
         "skip_module_names": sorted(config.SKIP_MODULE_NAMES),
         "use_autotuned": config.USE_AUTOTUNED,
-        "kernel_name": config.KERNEL_NAME,
         "block_m": config.BLOCK_M,
         "block_n": config.BLOCK_N,
         "block_k": config.BLOCK_K,
+        # gptq params
+        "group_size": config.GROUP_SIZE,
+        "act_order": config.ACT_ORDER,
+        "calib_n_samples": config.CALIB_N_SAMPLES,
         "prompt": config.PROMPT,
         "quantization": quantization,
         "forward": forward,

@@ -2,7 +2,7 @@ import torch
 import triton
 import triton.language as tl
 
-from triton_kernels.quantize_kernel import dequantize_rowwise_int4
+from triton_kernels.quantize_kernel_sym import dequantize_rowwise_int4
 
 
 def matmul_x16_w4_ref(

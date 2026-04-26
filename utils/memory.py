@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from triton_kernels.quantized_linear import QuantizedLinear
+from triton_kernels.quantized_linear import GPTQLinear, QuantizedLinear
 
 
 def tensor_nbytes(tensor: torch.Tensor) -> int:
@@ -37,5 +37,22 @@ def quantized_linear_weight_bytes(model: nn.Module) -> int:
     return total
 
 
+def gptq_linear_weight_bytes(model: nn.Module) -> int:
+    total = 0
+    for module in model.modules():
+        if isinstance(module, GPTQLinear):
+            total += tensor_nbytes(module.w_packed)
+            total += tensor_nbytes(module.w_scales)
+            if module.perm is not None:
+                total += tensor_nbytes(module.perm)
+            if module.bias is not None:
+                total += tensor_nbytes(module.bias)
+    return total
+
+
 def linear_and_quantized_weight_bytes(model: nn.Module) -> int:
-    return linear_weight_bytes(model) + quantized_linear_weight_bytes(model)
+    return (
+        linear_weight_bytes(model)
+        + quantized_linear_weight_bytes(model)
+        + gptq_linear_weight_bytes(model)
+    )

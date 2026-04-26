@@ -1,6 +1,6 @@
 import torch
 
-from triton_kernels.quantize_kernel import (
+from triton_kernels.quantize_kernel_sym import (
     quantize_rowwise_int4,
     dequantize_rowwise_int4,
 )

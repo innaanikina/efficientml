@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from triton_kernels.matmul_int4 import (
+from triton_kernels.matmul_int4_sym import (
     matmul_x16_w4_autotuned,
     matmul_x16_w4,
     matmul_x16_w4_ref,
