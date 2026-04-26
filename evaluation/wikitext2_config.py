@@ -30,5 +30,5 @@ CALIB_N_SAMPLES = llama_inference_config.CALIB_N_SAMPLES
 ACT_ORDER = llama_inference_config.ACT_ORDER
 
 OUTPUT_DIR = Path("evaluation/results") / llama_inference_config._output_label
-OUTPUT_JSON = OUTPUT_DIR / "wikitext2_eval_full_quant.json"
-OUTPUT_MD = OUTPUT_DIR / "wikitext2_eval_full_quant.md"
+OUTPUT_JSON = OUTPUT_DIR / "wikitext2_eval.json"
+OUTPUT_MD = OUTPUT_DIR / "wikitext2_eval.md"

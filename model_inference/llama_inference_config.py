@@ -6,13 +6,13 @@ QUANTIZATION_METHOD = "simple"  # доступно: "simple", "gptq"
 
 # Параметры для кернелей "simple"
 SKIP_MODULE_NAMES = set()
-USE_AUTOTUNED = False
 
 # общие параметры
 KERNEL_NAME = "rowwise_int4"  # доступно "rowwise_int4", "rowwise_int4_asym", "rowwise_int4_gptq"
 BLOCK_M = 256
 BLOCK_N = 64
 BLOCK_K = 32
+USE_AUTOTUNED = False
 
 # Параметры для "gptq"
 GROUP_SIZE = 128       # columns per scale group

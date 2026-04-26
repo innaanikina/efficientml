@@ -89,6 +89,10 @@ def _do_quantize(model, tokenizer) -> dict:
             calib,
             group_size=config.GROUP_SIZE,
             act_order=config.ACT_ORDER,
+            use_autotuned=config.USE_AUTOTUNED,
+            block_m=config.BLOCK_M,
+            block_n=config.BLOCK_N,
+            block_k=config.BLOCK_K,
         )
     else:
         return quantize_model(

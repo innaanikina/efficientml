@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from triton_kernels.matmul_int4_gptq import matmul_x16_w4_groupwise
+from triton_kernels.matmul_int4_gptq import matmul_x16_w4_groupwise, matmul_x16_w4_groupwise_plain
 from triton_kernels.quantization_kernels import QuantizedWeights, get_quantized_kernel
 from triton_kernels.quantize_kernel_gptq import dequantize_groupwise_int4
 
@@ -192,11 +192,19 @@ class GPTQLinear(nn.Module):
         w_scales: torch.Tensor,
         perm: torch.Tensor | None = None,
         group_size: int = 128,
+        use_autotuned: bool = True,
+        block_m: int = 32,
+        block_n: int = 32,
+        block_k: int = 32,
     ):
         super().__init__()
         self.in_features = linear.in_features
         self.out_features = linear.out_features
         self.group_size = group_size
+        self.use_autotuned = use_autotuned
+        self.block_m = block_m
+        self.block_n = block_n
+        self.block_k = block_k
 
         self.register_buffer("w_packed", w_packed)
         self.register_buffer("w_scales", w_scales)
@@ -219,9 +227,15 @@ class GPTQLinear(nn.Module):
         x = x.reshape(-1, self.in_features).contiguous()
         if self.perm is not None:
             x = x.index_select(1, self.perm)
-        y = matmul_x16_w4_groupwise(
-            x, self.w_packed, self.w_scales, self.in_features, self.group_size
-        )
+        if self.use_autotuned:
+            y = matmul_x16_w4_groupwise(
+                x, self.w_packed, self.w_scales, self.in_features, self.group_size,
+            )
+        else:
+            y = matmul_x16_w4_groupwise_plain(
+                x, self.w_packed, self.w_scales, self.in_features, self.group_size,
+                block_m=self.block_m, block_n=self.block_n, block_k=self.block_k,
+            )
         y = y.reshape(*shape[:-1], self.out_features)
         return y + self.bias if self.bias is not None else y
 

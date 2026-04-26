@@ -74,6 +74,10 @@ def _replace_linear_in_block(
     cnts: dict,
     group_size: int,
     act_order: bool,
+    use_autotuned: bool,
+    block_m: int,
+    block_n: int,
+    block_k: int,
 ) -> None:
     """GPTQ-quantize every nn.Linear inside ``block`` that has a Hessian."""
     for name, mod in list(block.named_modules()):
@@ -94,7 +98,12 @@ def _replace_linear_in_block(
         setattr(
             parent,
             parts[-1],
-            GPTQLinear(mod, w_packed, w_scales, perm, group_size=group_size),
+            GPTQLinear(
+                mod, w_packed, w_scales, perm,
+                group_size=group_size,
+                use_autotuned=use_autotuned,
+                block_m=block_m, block_n=block_n, block_k=block_k,
+            ),
         )
 
 
@@ -103,6 +112,10 @@ def gptq_quantize_model(
     calib: torch.Tensor,
     group_size: int = 128,
     act_order: bool = True,
+    use_autotuned: bool = True,
+    block_m: int = 32,
+    block_n: int = 32,
+    block_k: int = 32,
 ) -> dict:
     linear_weight_bytes_before = linear_weight_bytes(model)
     linear_count_before = sum(1 for m in model.modules() if isinstance(m, nn.Linear))
@@ -142,7 +155,7 @@ def gptq_quantize_model(
         for h in hooks:
             h.remove()
 
-        _replace_linear_in_block(block, Hs, cnts, group_size, act_order)
+        _replace_linear_in_block(block, Hs, cnts, group_size, act_order, use_autotuned, block_m, block_n, block_k)
 
         new_inps: list[torch.Tensor] = []
         with torch.no_grad():
@@ -168,7 +181,12 @@ def gptq_quantize_model(
         group_size=group_size,
         act_order=False,
     )
-    model.lm_head = GPTQLinear(lm, w_packed, w_scales, perm=None, group_size=group_size)
+    model.lm_head = GPTQLinear(
+        lm, w_packed, w_scales, perm=None,
+        group_size=group_size,
+        use_autotuned=use_autotuned,
+        block_m=block_m, block_n=block_n, block_k=block_k,
+    )
 
     if getattr(model.config, "tie_word_embeddings", False):
         orig_embed = model.model.embed_tokens
