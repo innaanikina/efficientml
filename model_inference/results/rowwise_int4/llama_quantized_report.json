@@ -1,0 +1,47 @@
+{
+  "model_id": "unsloth/Llama-3.2-1B-Instruct",
+  "quantization_method": "simple",
+  "kernel_name": "rowwise_int4",
+  "skip_module_names": [],
+  "use_autotuned": false,
+  "block_m": 256,
+  "block_n": 64,
+  "block_k": 32,
+  "group_size": 128,
+  "act_order": true,
+  "calib_n_samples": 32,
+  "prompt": "Вкратце, квантизация в int4 - это",
+  "quantization": {
+    "linear_before": 113,
+    "linear_after": 0,
+    "quantized_linear_after": 113,
+    "kernel_name": "rowwise_int4",
+    "quantization_time_s": 0.4306225962936878,
+    "linear_weight_mib_before": 2357.0,
+    "linear_weight_mib_after": 590.21337890625,
+    "linear_weight_compression": 3.9934709788650653
+  },
+  "forward": {
+    "input_shape": [
+      1,
+      15
+    ],
+    "logits_shape": [
+      1,
+      15,
+      128256
+    ],
+    "logits_dtype": "torch.float16",
+    "logits_error": {
+      "mse": 3.810450553894043,
+      "mae": 1.5017048120498657,
+      "max_abs_error": 13.9921875
+    }
+  },
+  "generation": {
+    "generated_tokens": 32,
+    "generation_time_s": 0.6600464694201946,
+    "tokens_per_second": 48.481434993675215,
+    "text": "Вкратце, квантизация в int4 - это культу, который не требует рациона или анализа. В культуре, который не требует рациона или анализ"
+  }
+}

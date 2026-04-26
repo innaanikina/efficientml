@@ -7,28 +7,32 @@
   },
   "eval_tokens": 8192,
   "quantized_config": {
+    "quantization_method": "simple",
     "skip_module_names": [],
     "use_autotuned": false,
     "kernel_name": "rowwise_int4",
     "block_m": 256,
     "block_n": 64,
-    "block_k": 32
+    "block_k": 32,
+    "group_size": 128,
+    "act_order": true,
+    "calib_n_samples": 32
   },
   "baseline": {
     "quantization": null,
     "perplexity": {
       "tokens": 8192,
       "sequence_length": 512,
-      "eval_time_s": 0.9808734618127346,
-      "eval_tokens_per_second": 8351.739871583957,
-      "mean_nll": 3.0204206705093384,
-      "perplexity": 20.499913579664163
+      "eval_time_s": 0.49359922483563423,
+      "eval_tokens_per_second": 16596.460423388813,
+      "mean_nll": 3.0204268097877502,
+      "perplexity": 20.500039434727377
     },
     "generation": {
       "prompt_tokens": 15,
       "generated_tokens": 32,
-      "generation_time_s": 0.6953453281894326,
-      "generation_tokens_per_second": 46.02029912723057
+      "generation_time_s": 0.43577397987246513,
+      "generation_tokens_per_second": 73.43256247049264
     }
   },
   "quantized": {
@@ -37,7 +41,7 @@
       "linear_after": 0,
       "quantized_linear_after": 113,
       "kernel_name": "rowwise_int4",
-      "quantization_time_s": 0.6588046997785568,
+      "quantization_time_s": 0.43420039117336273,
       "linear_weight_mib_before": 2357.0,
       "linear_weight_mib_after": 590.21337890625,
       "linear_weight_compression": 3.9934709788650653
@@ -45,22 +49,22 @@
     "perplexity": {
       "tokens": 8192,
       "sequence_length": 512,
-      "eval_time_s": 1.6310588233172894,
-      "eval_tokens_per_second": 5022.504328408524,
-      "mean_nll": 3.994436502456665,
-      "perplexity": 54.29523676948992
+      "eval_time_s": 0.3987993523478508,
+      "eval_tokens_per_second": 20541.658234325736,
+      "mean_nll": 4.008699953556061,
+      "perplexity": 55.075223652740156
     },
     "generation": {
       "prompt_tokens": 15,
       "generated_tokens": 32,
-      "generation_time_s": 1.0467545446008444,
-      "generation_tokens_per_second": 30.570681699024732
+      "generation_time_s": 0.6134549006819725,
+      "generation_tokens_per_second": 52.16357382494765
     }
   },
   "comparison": {
-    "perplexity_delta": 33.79532318982575,
-    "perplexity_ratio": 2.6485593004328853,
-    "eval_speed_ratio": 0.6013722177216202,
-    "generation_speed_ratio": 0.6642868968432197
+    "perplexity_delta": 34.57518421801278,
+    "perplexity_ratio": 2.686591107695232,
+    "eval_speed_ratio": 1.237713205725306,
+    "generation_speed_ratio": 0.7103602553146433
   }
 }

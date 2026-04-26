@@ -6,6 +6,7 @@ import torch
 from model_inference import llama_inference_config as config
 from utils.cuda import synchronize
 from utils.model import compute_error, load_model_and_tokenizer, quantize_model
+from utils.gptq_pipeline import gptq_quantize_model, load_calibration_data
 
 
 @torch.no_grad()
@@ -58,7 +59,6 @@ def run_generation(model, tokenizer) -> dict:
 def _do_quantize(model, tokenizer) -> dict:
     """Dispatch to the correct quantization path based on config."""
     if config.QUANTIZATION_METHOD == "gptq":
-        from utils.gptq_pipeline import gptq_quantize_model, load_calibration_data
         calib = load_calibration_data(tokenizer, n_samples=config.CALIB_N_SAMPLES)
         return gptq_quantize_model(
             model,

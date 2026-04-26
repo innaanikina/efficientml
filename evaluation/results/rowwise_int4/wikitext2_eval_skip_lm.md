@@ -7,13 +7,13 @@
 
 | metric | baseline fp16 | quantized |
 | --- | ---: | ---: |
-| perplexity | 20.4999 | 52.5700 |
-| eval tokens/s | 9032.90 | 8274.35 |
-| generation tokens/s | 55.34 | 30.74 |
+| perplexity | 20.5000 | 52.5700 |
+| eval tokens/s | 15930.95 | 22432.11 |
+| generation tokens/s | 73.27 | 55.08 |
 
 | comparison | value |
 | --- | ---: |
-| perplexity delta | 32.0701 |
+| perplexity delta | 32.0700 |
 | perplexity ratio | 2.5644 |
-| eval speed ratio | 0.9160 |
-| generation speed ratio | 0.5555 |
+| eval speed ratio | 1.4081 |
+| generation speed ratio | 0.7518 |

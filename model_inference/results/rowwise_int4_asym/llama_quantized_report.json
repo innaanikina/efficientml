@@ -1,0 +1,47 @@
+{
+  "model_id": "unsloth/Llama-3.2-1B-Instruct",
+  "quantization_method": "simple",
+  "kernel_name": "rowwise_int4_asym",
+  "skip_module_names": [],
+  "use_autotuned": false,
+  "block_m": 256,
+  "block_n": 64,
+  "block_k": 32,
+  "group_size": 128,
+  "act_order": true,
+  "calib_n_samples": 32,
+  "prompt": "Вкратце, квантизация в int4 - это",
+  "quantization": {
+    "linear_before": 113,
+    "linear_after": 0,
+    "quantized_linear_after": 113,
+    "kernel_name": "rowwise_int4_asym",
+    "quantization_time_s": 0.4277188442647457,
+    "linear_weight_mib_before": 2357.0,
+    "linear_weight_mib_after": 592.14013671875,
+    "linear_weight_compression": 3.980476670709976
+  },
+  "forward": {
+    "input_shape": [
+      1,
+      15
+    ],
+    "logits_shape": [
+      1,
+      15,
+      128256
+    ],
+    "logits_dtype": "torch.float16",
+    "logits_error": {
+      "mse": 2.658503770828247,
+      "mae": 1.2565134763717651,
+      "max_abs_error": 11.509765625
+    }
+  },
+  "generation": {
+    "generated_tokens": 32,
+    "generation_time_s": 0.6820559650659561,
+    "tokens_per_second": 46.91697109768044,
+    "text": "Вкратце, квантизация в int4 - это квантизационный индeks, который можно использовать для записи квантизированного значения в каком nào форме. В"
+  }
+}

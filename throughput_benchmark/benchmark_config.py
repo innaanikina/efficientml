@@ -17,7 +17,7 @@ SKIP_LM_HEAD = False
 SKIP_AUTOTUNED = False
 
 # Кернелы: "rowwise_int4", "rowwise_int4_asym", "rowwise_int4_gptq"
-KERNEL_NAME = "rowwise_int4_asym"
+KERNEL_NAME = "rowwise_int4_gptq"
 
 # Group size для кернела "rowwise_int4_gptq"
 GROUP_SIZE = 128

@@ -1,0 +1,50 @@
+{
+  "model_id": "unsloth/Llama-3.2-1B-Instruct",
+  "quantization_method": "gptq",
+  "kernel_name": "rowwise_int4_gptq",
+  "skip_module_names": [],
+  "use_autotuned": false,
+  "block_m": 64,
+  "block_n": 64,
+  "block_k": 64,
+  "group_size": 128,
+  "act_order": true,
+  "calib_n_samples": 32,
+  "prompt": "Вкратце, квантизация в int4 - это",
+  "quantization": {
+    "quantization_method": "gptq",
+    "group_size": 128,
+    "act_order": true,
+    "calib_n_samples": 32,
+    "linear_before": 113,
+    "linear_after": 0,
+    "gptq_linear_after": 113,
+    "quantization_time_s": 57.328803565353155,
+    "linear_weight_mib_before": 2357.0,
+    "linear_weight_mib_after": 610.1640625,
+    "linear_weight_compression": 3.8628954814919143
+  },
+  "forward": {
+    "input_shape": [
+      1,
+      15
+    ],
+    "logits_shape": [
+      1,
+      15,
+      128256
+    ],
+    "logits_dtype": "torch.float16",
+    "logits_error": {
+      "mse": 1.9956333637237549,
+      "mae": 1.0763721466064453,
+      "max_abs_error": 13.22265625
+    }
+  },
+  "generation": {
+    "generated_tokens": 32,
+    "generation_time_s": 6.64910700917244,
+    "tokens_per_second": 4.812676342230019,
+    "text": "Вкратце, квантизация в int4 - это функция, которая позволяет визуализировать квантизированные числа в int4. \n\n### Квантизация в int4\n\n"
+  }
+}
