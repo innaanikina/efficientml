@@ -14,11 +14,17 @@ dependencies = [
     "datasets>=3.0.0",
     "tabulate>=0.10.0",
     "matplotlib>=3.10.8",
+    "accelerate>=1.0.0",
 ]
 
 [[tool.uv.index]]
+name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
+explicit = true
 
 [[tool.uv.index]]
 url = "https://pypi.org/simple"
 default = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
